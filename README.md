@@ -1,5 +1,5 @@
 # RS to Velodyne
-A ros tool for converting Robosense pointcloud to Velodyne pointcloud format.
+A ros tool for converting Robosense pointcloud to Velodyne pointcloud format, which can be directly used for downstream algorithm, such as LOAM, LEGO-LOAM, LIO-SAM, etc.
 
 Currently support RS-16 and RS-Ruby LiDAR point cloud, of **XYZI** and **XYZIRT** format. More LiDAR model support will comming soon. 
 ## Useage
