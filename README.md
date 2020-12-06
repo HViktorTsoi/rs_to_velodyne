@@ -12,7 +12,8 @@ rosrun rs_to_velodyne rs_to_velodyne XYZI
 The output point clouds are **XYZIR** point cloud `/velodyne_points` in Velodyne's format.
 
 ### 2. XYZIRT
-For **XYZIRT** format point clouds from `/rslidar_points`:
+For **XYZIRT** format point clouds from `/rslidar_points` (Notice that, you need the latest 
+[rslidar_sdk](https://github.com/RoboSense-LiDAR/rslidar_sdk) to get this type of point cloud):
 ```
 rosrun rs_to_velodyne rs_to_velodyne XYZIRT
 ``` 
