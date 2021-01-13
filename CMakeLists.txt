@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL REQUIRED QUIET)
 
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS 
   DEPENDS PCL
 )
 
