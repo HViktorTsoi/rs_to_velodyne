@@ -7,6 +7,8 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+std::string output_type;
+
 static int RING_ID_MAP_RUBY[] = {
         3, 66, 33, 96, 11, 74, 41, 104, 19, 82, 49, 112, 27, 90, 57, 120,
         35, 98, 1, 64, 43, 106, 9, 72, 51, 114, 17, 80, 59, 122, 25, 88,
@@ -83,7 +85,7 @@ bool has_nan(T point) {
 }
 
 template<typename T>
-void publish_points(T &new_pc, sensor_msgs::PointCloud2 &old_msg) {
+void publish_points(T &new_pc, const sensor_msgs::PointCloud2 &old_msg) {
     // pc properties
     new_pc->is_dense = true;
 
@@ -122,37 +124,87 @@ void rsHandler_XYZI(sensor_msgs::PointCloud2 pc_msg) {
     publish_points(pc_new, pc_msg);
 }
 
-void rsHandler_XYZIRT(sensor_msgs::PointCloud2 pc_msg) {
-    pcl::PointCloud<RsPointXYZIRT>::Ptr pc(new pcl::PointCloud<RsPointXYZIRT>());
-    pcl::PointCloud<VelodynePointXYZIRT>::Ptr pc_new(new pcl::PointCloud<VelodynePointXYZIRT>());
-    pcl::fromROSMsg(pc_msg, *pc);
+
+template<typename T_in_p, typename T_out_p>
+void handle_pc_msg(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
+                   const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
 
     // to new pointcloud
-    for (int point_id = 0; point_id < pc->points.size(); ++point_id) {
-        if (has_nan(pc->points[point_id]))
+    for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
+        if (has_nan(pc_in->points[point_id]))
             continue;
-        VelodynePointXYZIRT new_point;
+        T_out_p new_point;
 //        std::copy(pc->points[point_id].data, pc->points[point_id].data + 4, new_point.data);
-        new_point.x = pc->points[point_id].x;
-        new_point.y = pc->points[point_id].y;
-        new_point.z = pc->points[point_id].z;
-        new_point.intensity = pc->points[point_id].intensity;
-        new_point.ring = pc->points[point_id].ring;
-        // 计算相对于第一个点的相对时间
-        new_point.time = float(pc->points[point_id].timestamp - pc->points[0].timestamp);
-        pc_new->points.push_back(new_point);
+        new_point.x = pc_in->points[point_id].x;
+        new_point.y = pc_in->points[point_id].y;
+        new_point.z = pc_in->points[point_id].z;
+        new_point.intensity = pc_in->points[point_id].intensity;
+//        new_point.ring = pc->points[point_id].ring;
+//        // 计算相对于第一个点的相对时间
+//        new_point.time = float(pc->points[point_id].timestamp - pc->points[0].timestamp);
+        pc_out->points.push_back(new_point);
     }
+}
 
-    publish_points(pc_new, pc_msg);
+template<typename T_in_p, typename T_out_p>
+void add_ring(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
+              const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
+    // to new pointcloud
+    int valid_point_id = 0;
+    for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
+        if (has_nan(pc_in->points[point_id]))
+            continue;
+        // 跳过nan点
+        pc_out->points[valid_point_id++].ring = pc_in->points[point_id].ring;
+    }
+}
+
+template<typename T_in_p, typename T_out_p>
+void add_time(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
+              const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
+    // to new pointcloud
+    int valid_point_id = 0;
+    for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
+        if (has_nan(pc_in->points[point_id]))
+            continue;
+        // 跳过nan点
+        pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
+    }
+}
+
+void rsHandler_XYZIRT(const sensor_msgs::PointCloud2 &pc_msg) {
+    pcl::PointCloud<RsPointXYZIRT>::Ptr pc_in(new pcl::PointCloud<RsPointXYZIRT>());
+    pcl::fromROSMsg(pc_msg, *pc_in);
+
+    if (output_type == "XYZIRT") {
+        pcl::PointCloud<VelodynePointXYZIRT>::Ptr pc_out(new pcl::PointCloud<VelodynePointXYZIRT>());
+        handle_pc_msg<RsPointXYZIRT, VelodynePointXYZIRT>(pc_in, pc_out);
+        add_ring<RsPointXYZIRT, VelodynePointXYZIRT>(pc_in, pc_out);
+        add_time<RsPointXYZIRT, VelodynePointXYZIRT>(pc_in, pc_out);
+        publish_points(pc_out, pc_msg);
+    } else if (output_type == "XYZIR") {
+        pcl::PointCloud<VelodynePointXYZIR>::Ptr pc_out(new pcl::PointCloud<VelodynePointXYZIR>());
+        handle_pc_msg<RsPointXYZIRT, VelodynePointXYZIR>(pc_in, pc_out);
+        add_ring<RsPointXYZIRT, VelodynePointXYZIR>(pc_in, pc_out);
+        publish_points(pc_out, pc_msg);
+    } else if (output_type == "XYZI") {
+        pcl::PointCloud<pcl::PointXYZI>::Ptr pc_out(new pcl::PointCloud<pcl::PointXYZI>());
+        handle_pc_msg<RsPointXYZIRT, pcl::PointXYZI>(pc_in, pc_out);
+        publish_points(pc_out, pc_msg);
+    }
 }
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "rs_converter");
     ros::NodeHandle nh;
-    if (argc == 1) {
-        ROS_ERROR("Please specify input pointcloud type!!! ( XYZI or XYZIRT)");
+    if (argc < 3) {
+        ROS_ERROR(
+                "Please specify input pointcloud type( XYZI or XYZIRT) and output pointcloud type(XYZI, XYZIR, XYZIRT)!!!");
         exit(1);
     } else {
+        // 输出点云类型
+        output_type = argv[2];
+
         if (std::strcmp("XYZI", argv[1]) == 0) {
             subRobosensePC = nh.subscribe("/rslidar_points", 1, rsHandler_XYZI);
         } else if (std::strcmp("XYZIRT", argv[1]) == 0) {

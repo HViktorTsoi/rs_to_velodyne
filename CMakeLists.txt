@@ -13,8 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
-find_package(PCL REQUIRED QUIET)
-
 catkin_package(
   INCLUDE_DIRS include
   DEPENDS PCL
