@@ -10,7 +10,7 @@ RS-16, RS-32, RS-Ruby, RS-BP and RS-Helios LiDAR point cloud.
 ### 2. [robosense XYZI] to [velodyne XYZIR]:
 RS-16 and RS-Ruby LiDAR point cloud, More LiDAR model support is coming soon. 
 
-### For rslidar_sdk v1.5+, minor modifications should be made in the code. Please see https://github.com/HViktorTsoi/rs_to_velodyne/issues/11. This fix will soon be merged into the main stream.
+### Notice: For rslidar_sdk v1.5+(2022), minor modifications should be made in the code. Please see https://github.com/HViktorTsoi/rs_to_velodyne/issues/11. This fix will soon be merged into the main stream.
 
 ## Usage
 
